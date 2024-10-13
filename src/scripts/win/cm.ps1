@@ -13,7 +13,7 @@ if ($null -eq $ext){
 }
 
 if (-not (Test-Path -Path "./.csuite/bin")){
-    New-Item -Path "./.csuite/bin" -ItemType "directory"
+    $null = New-Item -Path "./.csuite/bin" -ItemType "directory"
 }
 
 

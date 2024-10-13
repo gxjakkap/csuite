@@ -19,7 +19,11 @@ try {
             Write-Host "./$dest/$fileName.c already existed!"
         }
         else {
-            Copy-Item "./$templatedir/c.c" -Destination "./$dest/$fileName.c" -ErrorAction Stop
+            if (!(Test-Path -Path "./$dest/" -PathType Container)){
+                Write-Host "$dest/$fileName does not exist. Creating..."
+                $null = New-Item -Path "./$dest" -ItemType directory -ErrorAction Stop
+            }
+            $null = Copy-Item "./$templatedir/c.c" -Destination "./$dest/$fileName.c" -ErrorAction Stop
             Write-Host "./$dest/$fileName.c created successfully!"
         }
     }
@@ -28,7 +32,11 @@ try {
             Write-Host "./$dest/$fileName.py already existed!"
         }
         else {
-            New-Item -Path "./$dest/$fileName.py" -ItemType file -ErrorAction Stop
+            if (!(Test-Path -Path "./$dest/" -PathType Container)){
+                Write-Host "$dest/$fileName does not exist. Creating..."
+                $null = New-Item -Path "./$dest" -ItemType directory -ErrorAction Stop
+            }
+            $null = New-Item -Path "./$dest/$fileName.py" -ItemType file -ErrorAction Stop
             Write-Host "./$dest/$fileName.py created successfully!"
         }
     }
@@ -37,7 +45,11 @@ try {
             Write-Host "./$dest/$fileName.test.json already existed!"
         }
         else {
-            Copy-Item "./$templatedir/test.json" -Destination "./$dest/$fileName.test.json" -ErrorAction Stop
+            if (!(Test-Path -Path "./$dest/" -PathType Container)){
+                Write-Host "$dest/$fileName does not exist. Creating..."
+                $null = New-Item -Path "./$dest" -ItemType directory -ErrorAction Stop
+            }
+            $null = Copy-Item "./$templatedir/test.json" -Destination "./$dest/$fileName.test.json" -ErrorAction Stop
             Write-Host "./$dest/$fileName.test.json created successfully!"
         }
     }
@@ -46,7 +58,11 @@ try {
             Write-Host "./$dest/$fileName.$ext already existed!"
         }
         else {
-            New-Item -Path "./$dest/$fileName.$ext" -ItemType file -ErrorAction Stop
+            if (!(Test-Path -Path "./$dest/" -PathType Container)){
+                Write-Host "$dest/$fileName does not exist. Creating..."
+                $null = New-Item -Path "./$dest" -ItemType directory -ErrorAction Stop
+            }
+            $null = New-Item -Path "./$dest/$fileName.$ext" -ItemType file -ErrorAction Stop
             Write-Host "./$dest/$fileName.$ext created successfully!"
         }
     }
