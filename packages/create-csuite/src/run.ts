@@ -2,12 +2,15 @@ import prompts from "prompts";
 import degit from "degit";
 import chalk from "chalk";
 import fs from "fs";
+import { exec } from "node:child_process";
+import { promisify } from "node:util"
 import yoctoSpinner from 'yocto-spinner';
 import { platform, cwd } from "node:process";
 import { checkForCommand } from "./check.js"
 
 const repo = "gxjakkap/csuite";
 
+const pExec = promisify(exec);
 
 (async () => {
     try{
@@ -108,6 +111,7 @@ const repo = "gxjakkap/csuite";
         
         // download scripts
         await degit(`${repo}/src/scripts/linux`, degitOptions).clone(`${projDir}`);
+        await pExec(`for file in *.sh; do mv "$file" "${"$"}{file%.sh}" done`)
 
         // download py script for testing
         await degit(`${repo}/src/py`, degitOptions).clone(`${projDir}/.csuite/test`);
