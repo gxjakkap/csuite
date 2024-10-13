@@ -1,0 +1,10 @@
+{
+    "memLimit": 0,
+    "timeLimit": 0,
+    "cases": [
+        {
+            "input": "",
+            "expect": ""
+        }
+    ]
+}
