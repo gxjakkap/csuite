@@ -74,6 +74,48 @@ const repo = "gxjakkap/csuite";
         // download template
         await degit(`${repo}/src/template`, degitOptions).clone(`${projDir}/.csuite/template`);
         projGenSpinner.success(chalk.green(`Successfully generated project at ${projDir}`));
+        process.exit(0)
+      }
+
+      else if (platform === "linux"){
+        console.log(chalk.cyan(chalk.bold("Checking for required dependencies")))
+        const gccCheckSpinner = yoctoSpinner({text: chalk.cyan(`Checking for ${chalk.underline("gcc")}`)}).start();
+        const gccExists = await checkForCommand("gcc --version", "gcc")
+
+        if (gccExists){
+          gccCheckSpinner.success(chalk.green(`gcc found (${gccExists})`))
+        }
+        else {
+          gccCheckSpinner.error(chalk.red(`gcc not found! You need download it later for csuite to work.`))
+        }
+
+        const pyCheckSpinner = yoctoSpinner({text: chalk.cyan(`Checking for ${chalk.underline("Python")}`)}).start();
+        const pyExists = await checkForCommand("python3 --version", "Python")
+
+        if (pyExists){
+          pyCheckSpinner.success(chalk.green(`Python found (${pyExists})`))
+        }
+        else {
+          pyCheckSpinner.error(chalk.red(`Python not found! You'll need it for test and testv.`))
+        }
+
+        console.log(" ");
+        console.log(chalk.cyan(chalk.bold("Generating project and Installing tools")))
+
+        const projGenSpinner = yoctoSpinner({text: chalk.cyan(`Generating project using template for ${chalk.underline("Linux")}`)}).start();
+        
+        const degitOptions: degit.Options = { force: overwriteDir }
+        
+        // download scripts
+        await degit(`${repo}/src/scripts/linux`, degitOptions).clone(`${projDir}`);
+
+        // download py script for testing
+        await degit(`${repo}/src/py`, degitOptions).clone(`${projDir}/.csuite/test`);
+
+        // download template
+        await degit(`${repo}/src/template`, degitOptions).clone(`${projDir}/.csuite/template`);
+        projGenSpinner.success(chalk.green(`Successfully generated project at ${projDir}`));
+        process.exit(0)
       }
     }
     catch(err: any){
