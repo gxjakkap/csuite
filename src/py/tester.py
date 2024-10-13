@@ -19,7 +19,7 @@ try:
 except:
     pass
 
-name = exe.replace(".\bin", "").replace("bin/", "").replace('"\"', "").replace(".exe", "")
+name = exe.replace(".\csuite\bin", "").replace(".csuite/bin/", "").replace("./csuite/bin/", "").replace('"\"', "").replace(".exe", "")
 src = getsrcname(name)
 name = name.replace(f"_{src}", "")
 test_path = f"./{src}/{name}.test.json"
