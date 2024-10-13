@@ -9,5 +9,5 @@ if (!$name -or !$src){
 $compileCommand = "./cm `"$name`" $src"    
 Invoke-Expression -Command $compileCommand -ErrorAction Stop
 
-$testCommand = "py _test/main.py `"bin/$($name)_$($src)`" 1"    
+$testCommand = "py .csuite/test/tester.py `"bin/$($name)_$($src)`" 1"    
 Invoke-Expression -Command $testCommand
