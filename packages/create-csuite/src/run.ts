@@ -80,7 +80,7 @@ const pExec = promisify(exec);
         process.exit(0)
       }
 
-      else if (platform === "linux"){
+      else if (platform === "linux" || platform === "darwin"){
         console.log(chalk.cyan(chalk.bold("Checking for required dependencies")))
         const gccCheckSpinner = yoctoSpinner({text: chalk.cyan(`Checking for ${chalk.underline("gcc")}`)}).start();
         const gccExists = await checkForCommand("gcc --version", "gcc")
@@ -105,13 +105,13 @@ const pExec = promisify(exec);
         console.log(" ");
         console.log(chalk.cyan(chalk.bold("Generating project and Installing tools")))
 
-        const projGenSpinner = yoctoSpinner({text: chalk.cyan(`Generating project using template for ${chalk.underline("Linux")}`)}).start();
+        const projGenSpinner = yoctoSpinner({text: chalk.cyan(`Generating project using template for ${chalk.underline(platform === "darwin" ? "macOS" : "Linux")}`)}).start();
         
         const degitOptions: degit.Options = { force: overwriteDir }
         
         // download scripts
         await degit(`${repo}/src/scripts/linux`, degitOptions).clone(`${projDir}`);
-        await pExec(`for file in *.sh; do mv "$file" "${"$"}{file%.sh}" done`)
+        await pExec(`cd "${projDir}" && for file in *.sh; do [ -f "$file" ] && mv "$file" "${"$"}{file%.sh}"; done`)
 
         // download py script for testing
         await degit(`${repo}/src/py`, degitOptions).clone(`${projDir}/.csuite/test`);
