@@ -1,0 +1,23 @@
+{
+    "py": {
+        "tester": 1
+    },
+    "linux": {
+        "cm": 1,
+        "nf": 1,
+        "up": 1,
+        "test": 1,
+        "testv": 1
+    },
+    "win": {
+        "cm": 1,
+        "nf": 1,
+        "up": 1,
+        "test": 1,
+        "testv": 1
+    },
+    "template": {
+        "c": 1,
+        "test": 1
+    }
+}

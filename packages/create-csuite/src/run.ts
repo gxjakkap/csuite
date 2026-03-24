@@ -2,6 +2,7 @@ import prompts from "prompts";
 import degit from "degit";
 import chalk from "chalk";
 import fs from "fs";
+import https from "node:https";
 import { exec } from "node:child_process";
 import { promisify } from "node:util"
 import yoctoSpinner from 'yocto-spinner';
@@ -12,119 +13,155 @@ const repo = "gxjakkap/csuite";
 
 const pExec = promisify(exec);
 
+const fetchJson = (url: string): Promise<any> => {
+  return new Promise((resolve, reject) => {
+    https.get(url, (res) => {
+      let data = "";
+      res.on("data", (chunk) => data += chunk);
+      res.on("end", () => {
+        try { resolve(JSON.parse(data)); } catch (e) { reject(e); }
+      });
+    }).on("error", reject);
+  });
+};
+
+const generateLocalScriptVersions = async (projDir: string, platformName: string) => {
+  const verSpinner = yoctoSpinner({ text: chalk.cyan("Saving current version config...") }).start();
+  try {
+    const repoBase = "https://raw.githubusercontent.com/gxjakkap/csuite/main";
+    const [remoteVersions, localTemplate] = await Promise.all([
+      fetchJson(`${repoBase}/scriptversions.json`),
+      fetchJson(`${repoBase}/src/scripts/ver/${platformName}.json`)
+    ]);
+
+    localTemplate.scripts = remoteVersions[platformName] || {};
+    localTemplate.py = remoteVersions.py || {};
+    localTemplate.template = remoteVersions.template || {};
+
+    fs.writeFileSync(`${projDir}/.csuite/local_scriptversions.json`, JSON.stringify(localTemplate, null, 2));
+    verSpinner.success(chalk.green("Generated local_scriptversions.json"));
+  } catch (e: any) {
+    verSpinner.error(chalk.yellow(`Failed to generate local_scriptversions.json: ${e.message}`));
+  }
+};
+
 (async () => {
-    try{
-      console.log(chalk.bold(chalk.cyan(("Initiating CSuite Project!\n"))))
-      console.log(chalk.whiteBright("Where should we initialize your project?"))
-      const projnamePrompt = await prompts([
-        {
-          type: "text",
-          name: "projName",
-          message: chalk.gray("> Enter your project name (put in '.' to initiate project in current directory)"),
-          initial: "csuite-project",
-          format: (val) => val.toLowerCase().split(" ").join("-")
-        },
-      ]);
-      console.log(" ");
+  try {
+    console.log(chalk.bold(chalk.cyan(("Initiating CSuite Project!\n"))))
+    console.log(chalk.whiteBright("Where should we initialize your project?"))
+    const projnamePrompt = await prompts([
+      {
+        type: "text",
+        name: "projName",
+        message: chalk.gray("> Enter your project name (put in '.' to initiate project in current directory)"),
+        initial: "csuite-project",
+        format: (val) => val.toLowerCase().split(" ").join("-")
+      },
+    ]);
+    console.log(" ");
 
-      const { projName } = projnamePrompt;
-      let projDir = `${cwd()}`;
-      let overwriteDir = false;
+    const { projName } = projnamePrompt;
+    let projDir = `${cwd()}`;
+    let overwriteDir = false;
 
-      if (projName !== ".") {
-        projDir = `${projDir}/${projName}`;
-        fs.mkdirSync(projDir);
+    if (projName !== ".") {
+      projDir = `${projDir}/${projName}`;
+      fs.mkdirSync(projDir);
+    }
+    else {
+      overwriteDir = true;
+    }
+
+    if (platform === "win32") {
+      console.log(chalk.cyan(chalk.bold("Checking for required dependencies")))
+      const gccCheckSpinner = yoctoSpinner({ text: chalk.cyan(`Checking for ${chalk.underline("gcc")}`) }).start();
+      const gccExists = await checkForCommand("gcc --version", "gcc")
+
+      if (gccExists) {
+        gccCheckSpinner.success(chalk.green(`gcc found (${gccExists})`))
       }
       else {
-        overwriteDir = true;
+        gccCheckSpinner.error(chalk.red(`gcc not found! You need download it later for csuite to work.`))
       }
 
-      if (platform === "win32"){
-        console.log(chalk.cyan(chalk.bold("Checking for required dependencies")))
-        const gccCheckSpinner = yoctoSpinner({text: chalk.cyan(`Checking for ${chalk.underline("gcc")}`)}).start();
-        const gccExists = await checkForCommand("gcc --version", "gcc")
+      const pyCheckSpinner = yoctoSpinner({ text: chalk.cyan(`Checking for ${chalk.underline("Python")}`) }).start();
+      const pyExists = await checkForCommand("py --version", "Python")
 
-        if (gccExists){
-          gccCheckSpinner.success(chalk.green(`gcc found (${gccExists})`))
-        }
-        else {
-          gccCheckSpinner.error(chalk.red(`gcc not found! You need download it later for csuite to work.`))
-        }
-
-        const pyCheckSpinner = yoctoSpinner({text: chalk.cyan(`Checking for ${chalk.underline("Python")}`)}).start();
-        const pyExists = await checkForCommand("py --version", "Python")
-
-        if (pyExists){
-          pyCheckSpinner.success(chalk.green(`Python found (${pyExists})`))
-        }
-        else {
-          pyCheckSpinner.error(chalk.red(`Python not found! You'll need it for test and testv.`))
-        }
-
-        console.log(" ");
-        console.log(chalk.cyan(chalk.bold("Generating project and Installing tools")))
-
-        const projGenSpinner = yoctoSpinner({text: chalk.cyan(`Generating project using template for ${chalk.underline("Windows")}`)}).start();
-        
-        const degitOptions: degit.Options = { force: overwriteDir }
-        
-        // download scripts
-        await degit(`${repo}/src/scripts/win`, degitOptions).clone(`${projDir}`);
-
-        // download py script for testing
-        await degit(`${repo}/src/py`, degitOptions).clone(`${projDir}/.csuite/test`);
-
-        // download template
-        await degit(`${repo}/src/template`, degitOptions).clone(`${projDir}/.csuite/template`);
-        projGenSpinner.success(chalk.green(`Successfully generated project at ${projDir}`));
-        process.exit(0)
+      if (pyExists) {
+        pyCheckSpinner.success(chalk.green(`Python found (${pyExists})`))
+      }
+      else {
+        pyCheckSpinner.error(chalk.red(`Python not found! You'll need it for test and testv.`))
       }
 
-      else if (platform === "linux" || platform === "darwin"){
-        console.log(chalk.cyan(chalk.bold("Checking for required dependencies")))
-        const gccCheckSpinner = yoctoSpinner({text: chalk.cyan(`Checking for ${chalk.underline("gcc")}`)}).start();
-        const gccExists = await checkForCommand("gcc --version", "gcc")
+      console.log(" ");
+      console.log(chalk.cyan(chalk.bold("Generating project and downloading tools")))
 
-        if (gccExists){
-          gccCheckSpinner.success(chalk.green(`gcc found (${gccExists})`))
-        }
-        else {
-          gccCheckSpinner.error(chalk.red(`gcc not found! You need download it later for csuite to work.`))
-        }
+      const projGenSpinner = yoctoSpinner({ text: chalk.cyan(`Generating project using template for ${chalk.underline("Windows")}`) }).start();
 
-        const pyCheckSpinner = yoctoSpinner({text: chalk.cyan(`Checking for ${chalk.underline("Python")}`)}).start();
-        const pyExists = await checkForCommand("python3 --version", "Python")
+      const degitOptions: degit.Options = { force: overwriteDir }
 
-        if (pyExists){
-          pyCheckSpinner.success(chalk.green(`Python found (${pyExists})`))
-        }
-        else {
-          pyCheckSpinner.error(chalk.red(`Python not found! You'll need it for test and testv.`))
-        }
+      // download scripts
+      await degit(`${repo}/src/scripts/win`, degitOptions).clone(`${projDir}`);
 
-        console.log(" ");
-        console.log(chalk.cyan(chalk.bold("Generating project and Installing tools")))
+      // download py script for testing
+      await degit(`${repo}/src/py`, degitOptions).clone(`${projDir}/.csuite/test`);
 
-        const projGenSpinner = yoctoSpinner({text: chalk.cyan(`Generating project using template for ${chalk.underline(platform === "darwin" ? "macOS" : "Linux")}`)}).start();
-        
-        const degitOptions: degit.Options = { force: overwriteDir }
-        
-        // download scripts
-        await degit(`${repo}/src/scripts/linux`, degitOptions).clone(`${projDir}`);
-        await pExec(`cd "${projDir}" && for file in *.sh; do [ -f "$file" ] && mv "$file" "${"$"}{file%.sh}"; done`)
+      // download template
+      await degit(`${repo}/src/template`, degitOptions).clone(`${projDir}/.csuite/template`);
 
-        // download py script for testing
-        await degit(`${repo}/src/py`, degitOptions).clone(`${projDir}/.csuite/test`);
+      await generateLocalScriptVersions(projDir, "win");
 
-        // download template
-        await degit(`${repo}/src/template`, degitOptions).clone(`${projDir}/.csuite/template`);
-        projGenSpinner.success(chalk.green(`Successfully generated project at ${projDir}`));
-        process.exit(0)
-      }
+      projGenSpinner.success(chalk.green(`Successfully generated project at ${projDir}`));
+      process.exit(0)
     }
-    catch(err: any){
-      console.log(err.message);
+
+    else if (platform === "linux" || platform === "darwin") {
+      console.log(chalk.cyan(chalk.bold("Checking for required dependencies")))
+      const gccCheckSpinner = yoctoSpinner({ text: chalk.cyan(`Checking for ${chalk.underline("gcc")}`) }).start();
+      const gccExists = await checkForCommand("gcc --version", "gcc")
+
+      if (gccExists) {
+        gccCheckSpinner.success(chalk.green(`gcc found (${gccExists})`))
+      }
+      else {
+        gccCheckSpinner.error(chalk.red(`gcc not found! You need download it later for csuite to work.`))
+      }
+
+      const pyCheckSpinner = yoctoSpinner({ text: chalk.cyan(`Checking for ${chalk.underline("Python")}`) }).start();
+      const pyExists = await checkForCommand("python3 --version", "Python")
+
+      if (pyExists) {
+        pyCheckSpinner.success(chalk.green(`Python found (${pyExists})`))
+      }
+      else {
+        pyCheckSpinner.error(chalk.red(`Python not found! You'll need it for test and testv.`))
+      }
+
+      console.log(" ");
+      console.log(chalk.cyan(chalk.bold("Generating project and Installing tools")))
+
+      const projGenSpinner = yoctoSpinner({ text: chalk.cyan(`Generating project using template for ${chalk.underline(platform === "darwin" ? "macOS" : "Linux")}`) }).start();
+
+      const degitOptions: degit.Options = { force: overwriteDir }
+
+      // download scripts
+      await degit(`${repo}/src/scripts/linux`, degitOptions).clone(`${projDir}`);
+      await pExec(`cd "${projDir}" && for file in *.sh; do [ -f "$file" ] && mv "$file" "${"$"}{file%.sh}"; done`)
+
+      // download py script for testing
+      await degit(`${repo}/src/py`, degitOptions).clone(`${projDir}/.csuite/test`);
+
+      // download template
+      await degit(`${repo}/src/template`, degitOptions).clone(`${projDir}/.csuite/template`);
+
+      await generateLocalScriptVersions(projDir, "linux");
+
+      projGenSpinner.success(chalk.green(`Successfully generated project at ${projDir}`));
+      process.exit(0)
     }
+  }
+  catch (err: any) {
+    console.log(err.message);
+  }
 })()
-
-//degit(`${repo}/src`)

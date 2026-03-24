@@ -53,6 +53,29 @@ elif [ "$ext" = "cc" ] || [ "$ext" = "cpp" ]; then
         echo "File does not exist!"
     fi
 
+elif [ "$ext" = "java" ]; then
+    if [ -f "$dir/$name.java" ]; then
+        if [ ! -d "./.csuite/bin/java" ]; then
+            mkdir -p "./.csuite/bin/java"
+        fi
+        if [ ! -d "./.csuite/bin/java/${src}" ]; then
+            mkdir -p "./.csuite/bin/java/${src}"
+        fi
+        compile_command="javac \"$dir/$name.java\" -d \"./.csuite/bin/${src}\""
+        echo "Compiling with command: $compile_command"
+
+        eval $compile_command
+
+        if [ $? -ne 0 ]; then
+            echo "Error compiling $name. Check the source code for errors."
+            exit 1
+        else
+            echo "$name.$ext compiled successfully! run the compiled bytecode with java -classpath \"./.csuite/bin/java/$src\" ${name}"
+        fi
+    else
+        echo "File does not exist!"
+    fi
+
 else
     echo "Compile command does not exist for $ext!"
     exit 1
