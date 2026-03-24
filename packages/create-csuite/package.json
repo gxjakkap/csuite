@@ -1,6 +1,6 @@
 {
   "name": "create-csuite",
-  "version": "0.1.0-pre2",
+  "version": "0.1.0",
   "description": "",
   "type": "module",
   "main": "dist/index.js",
